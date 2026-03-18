@@ -132,130 +132,139 @@ python solver.py
 
 
 
-# Gradient Descent for a Coefficient Inverse Problem (Burgers-type PDE)
-
----
-
 ## 🇬🇧 English
-
+ 
 ### Overview
-
+ 
 This project implements a **gradient descent algorithm for solving a coefficient inverse problem** governed by a nonlinear Burgers-type PDE. The goal is to recover an unknown spatial coefficient $q(x)$ from indirect observations of the solution at the final time moment — a classical ill-posed inverse problem arising in physics and engineering.
-
+ 
 The gradient of the cost functional is computed via an **adjoint (conjugate) problem**, which is the standard approach in PDE-constrained optimization and optimal control. Both the forward and adjoint problems are solved numerically using the **method of lines** combined with a **Rosenbrock scheme with complex coefficient**.
-
+ 
 > **Course project** · 2nd year · Faculty of Physics, Moscow State University  
 > Supervisor: Assoc. Prof. D.V. Lukyanenko
-
+ 
 ---
-
+ 
 ### Problem Statement
-
+ 
 #### Forward Problem
-
+ 
 We consider a nonlinear Burgers-type PDE:
-
-$$\varepsilon \frac{\partial^2 u}{\partial x^2} - \frac{\partial u}{\partial t} = -u \frac{\partial u}{\partial x} + q(x)\,u, \quad x \in (0,1),\ t \in (0, T]$$
-
-with boundary conditions $u(0,t) = u_\text{left}(t)$, $u(1,t) = u_\text{right}(t)$, and initial condition $u(x, 0) = u_\text{init}(x)$.
-
+ 
+$$
+\begin{cases}
+\varepsilon\cdot \dfrac{\partial^2 u}{\partial x^2} - \dfrac{\partial u}{\partial t} = -u\cdot \dfrac{\partial u}{\partial x} + q(x)\cdot u, & x \in (0,1),\ t \in (0, T] \\
+u(0,t) = u_{\text{left}}(t), \quad u(1,t) = u_{\text{right}}(t), & t \in (0, T] \\
+u(x,0) = u_{\text{init}}(x), & x \in [0,1]
+\end{cases}
+$$
+ 
 #### Inverse Problem
-
+ 
 The unknown coefficient $q(x)$ must be recovered from the observation at the final time:
-
+ 
 $$u(x, T) = f_\text{obs}(x), \quad x \in [0,1]$$
-
+ 
 This is an **ill-posed problem**: the map from $q$ to observations is compact and has no stable inverse.
-
+ 
 ---
-
+ 
 ### Method
-
+ 
 #### Tikhonov Functional
-
+ 
 We reformulate the inverse problem as minimization of a regularized functional:
-
-$$J[q] = \int_0^1 \bigl(u(x, T;\, q) - f_\text{obs}(x)\bigr)^2 dx + \alpha \int_0^1 q(x)^2\, dx$$
-
-where $\alpha \geq 0$ is the Tikhonov regularization parameter. The iterative update is:
-
-$$q^{(s+1)}(x) = q^{(s)}(x) - \beta_s \, \nabla J\bigl[q^{(s)}\bigr](x)$$
-
+ 
+$$J[q] = \int_0^1 \bigl(u(x, T; q) - f_\text{obs}(x)\bigr)^2 dx + \alpha\cdot \int_0^1 q^2(x) dx$$
+ 
+The iterative update is:
+ 
+$$
+q^{(s+1)}(x) = q^{(s)}(x) - \beta_s \cdot \nabla J\bigl(q^{(s)}\bigr)(x)
+$$
+ 
 #### Gradient via Adjoint Problem
-
-Computing $\nabla J$ directly is expensive. Instead, the gradient is derived analytically using the **adjoint state method**: by introducing an adjoint variable $\psi(x,t)$ satisfying a backward-in-time PDE:
-
-$$\varepsilon \frac{\partial^2 \psi}{\partial x^2} + \frac{\partial \psi}{\partial t} = u^{(s)} \frac{\partial \psi}{\partial x} + q^{(s)}(x)\,\psi, \quad \psi^{(s)}(x, 0) = -2\bigl(u^{(s)}(x,T) - f_\text{obs}(x)\bigr)$$
-
+ 
+The gradient is derived analytically using the **adjoint state method**: by introducing an adjoint variable $\psi(x,t)$ satisfying a backward-in-time PDE:
+ 
+$$
+\begin{cases}
+\varepsilon \cdot \dfrac{\partial^2 \psi}{\partial x^2} + \dfrac{\partial \psi}{\partial t} = u^{(s)}\cdot \dfrac{\partial \psi}{\partial x} + q^{(s)}(x)\cdot\psi, & x \in (0,1),\ t \in [0, T) \\
+\psi^{(s)}(0,t) = 0, \quad \psi^{(s)}(1,t) = 0, & t \in [0, T) \\
+\psi^{(s)}(x,0) = -2\cdot\bigl(u^{(s)}(x,T) - f_\text{obs}(x)\bigr), & x \in {[0,1]}
+\end{cases}
+$$
+ 
 the gradient takes the closed-form expression:
-
-$$\nabla J\bigl[q^{(s)}\bigr](x) = \int_0^T u^{(s)}(x,t)\,\psi^{(s)}(x,t)\, dt + 2\alpha\, q^{(s)}(x)$$
-
+ 
+$$
+\nabla J\bigl(q^{(s)}\bigr)(x) = \int_0^T u^{(s)}(x,t)\cdot\psi^{(s)}(x,t) dt + 2\alpha\cdot q^{(s)}(x)
+$$
+ 
 This approach requires solving **only two PDEs per iteration** (forward + adjoint), regardless of the dimensionality of $q$.
-
+ 
 #### Numerical Scheme
-
+ 
 Both PDEs are discretized via the **method of lines**: uniform spatial grid, then a system of ODEs in time:
-
-$$\frac{d\vec{y}}{dt} = \vec{f}(\vec{y},\, t), \quad \vec{y}(0) = \vec{y}_0$$
-
+ 
+$$
+\frac{d\vec{y}}{dt} = \vec{f}(\vec{y}, t), \quad \vec{y}(0) = \vec{y}_0
+$$
+ 
 The ODE system is integrated with a **one-stage Rosenbrock scheme with complex coefficient**:
-
-$$\left(E - \tfrac{1+i}{2}\,\tau\,\mathbf{f}_{\vec{y}}\right)\vec{w}_1 = \vec{f}\!\left(\vec{y}^m,\, t_m + \tfrac{\tau}{2}\right), \qquad \vec{y}^{m+1} = \vec{y}^m + \tau\,\operatorname{Re}\vec{w}_1$$
-
-Hot inner loops are accelerated with **Numba JIT compilation**.
-
+ 
+ 
 ---
-
+ 
 ### Results
-
+ 
 #### Convergence of $q(x)$ Recovery
-
+ 
 The true coefficient is $q(x) = \sin(3\pi x)$ (green). The recovered solution (orange) converges progressively:
-
+ 
 | Iteration | Result |
 |-----------|--------|
 | $s = 1$ | Initial guess (flat zero) |
 | $s = 100$ | Rough shape |
 | $s = 1000$ | Good match |
 | $s = 10\,000$ | Near-perfect recovery |
-
+ 
 > 📷 *Convergence plots from the paper — add images to `results/` and uncomment below*  
 > <!-- ![s=1000](results/iter_1000.png) ![s=10000](results/iter_10000.png) -->
-
+ 
 #### Functional Decay
-
+ 
 The cost functional $J[q^{(s)}]$ decreases monotonically over ~8000 iterations, reaching values around $10^{-15}$ — confirming convergence to the minimum.
-
+ 
 > 📷 *See `results/functional_decay.png`*
-
+ 
 #### Step Size Sensitivity
-
+ 
 The choice of descent step $\beta_s$ critically affects convergence:
-
+ 
 | $\beta_s$ | Behavior |
 |-----------|----------|
 | Too large (e.g. 165) | Fast initial drop, then plateau oscillations |
 | Too small (e.g. 1) | Slow monotone decrease, requires far more iterations |
 | Optimal (e.g. 30) | Smooth, fast convergence |
-
+ 
 ---
-
+ 
 ### Installation & Usage
-
+ 
 ```bash
 git clone https://github.com/doctorshtopor/<repo-name>
 cd <repo-name>
-
+ 
 pip install numpy scipy matplotlib numba celluloid
-
+ 
 python solver.py
 ```
-
+ 
 ---
-
+ 
 ### Project Structure
-
+ 
 ```
 .
 ├── solver.py            # Main: forward problem, adjoint problem, gradient descent
@@ -263,11 +272,11 @@ python solver.py
 ├── results/             # Output figures and animations
 └── README.md
 ```
-
+ 
 ---
-
+ 
 ### Stack
-
+ 
 | Tool | Purpose |
 |------|---------|
 | `numpy` | Array operations, spatial discretization |
@@ -275,7 +284,7 @@ python solver.py
 | `numba` | JIT acceleration of inner loops |
 | `matplotlib` | Plotting convergence and functional |
 | `celluloid` | Animated convergence GIF |
-
+ 
 ---
 
 
