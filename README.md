@@ -126,8 +126,8 @@ $$
 ### Установка и запуск
 
 ```bash
-git clone https://github.com/doctorshtopor/<repo-name>
-cd <repo-name>
+git clone https://github.com/doctorshtopor/InverseProblem
+cd InverseProblem
 
 pip install numpy scipy matplotlib numba celluloid
 
@@ -261,8 +261,8 @@ True function $q(x) = \sin(3\pi x)$ (yellow), numerical solution (green):
 ### Installation & Usage
  
 ```bash
-git clone https://github.com/doctorshtopor/<repo-name>
-cd <repo-name>
+git clone https://github.com/doctorshtopor/InverseProblem
+cd InverseProblem
  
 pip install numpy scipy matplotlib numba celluloid
  
