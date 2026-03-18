@@ -1,5 +1,13 @@
 
 ## 🇷🇺 Русский
+### Градиентный спуск для коэффициентной обратной задачи (уравнение типа Бюргерса)
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white"/>
+  <img src="https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white"/>
+  <img src="https://img.shields.io/badge/SciPy-8CAAE6?style=for-the-badge&logo=scipy&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Numba-JIT-00A3E0?style=for-the-badge"/>
+</p>
 
 ### Описание
 
@@ -21,7 +29,7 @@
 
 $$
 \begin{cases}
-\varepsilon \dfrac{\partial^2 u}{\partial x^2} - \dfrac{\partial u}{\partial t} = -u \dfrac{\partial u}{\partial x} + q(x)\cdot u, & x \in (0,1),\ t \in (0, T] \\
+\varepsilon\cdot \dfrac{\partial^2 u}{\partial x^2} - \dfrac{\partial u}{\partial t} = -u\cdot \dfrac{\partial u}{\partial x} + q(x)\cdot u, & x \in (0,1),\ t \in (0, T] \\
 u(0,t) = u_{\text{left}}(t), \quad u(1,t) = u_{\text{right}}(t), & t \in (0, T] \\
 u(x,0) = u_{\text{init}}(x), & x \in [0,1]
 \end{cases}
@@ -45,12 +53,12 @@ $$u(x, T) = f_\text{obs}(x), \quad x \in [0,1]$$
 
 Обратная задача сводится к минимизации регуляризованного функционала:
 
-$$J[q] = \int_0^1 \bigl(u(x, T; q) - f_\text{obs}(x)\bigr)^2 dx + \alpha \int_0^1 q^2(x) dx$$
+$$J[q] = \int_0^1 \bigl(u(x, T; q) - f_\text{obs}(x)\bigr)^2 dx + \alpha\cdot \int_0^1 q^2(x) dx$$
 
 Итерационный процесс градиентного спуска:
 
 $$
-q^{(s+1)}(x) = q^{(s)}(x) - \beta_s \cdot  \nabla J\bigl (q^{(s)} \bigr)(x)
+q^{(s+1)}(x) = q^{(s)}(x) - \beta_s \cdot \nabla J\bigl(q^{(s)}\bigr)(x)
 $$
 
 #### Нахождение градиента через сопряжённую задачу
@@ -59,16 +67,18 @@ $$
 
 $$
 \begin{cases}
-\varepsilon \dfrac{\partial^2 \psi}{\partial x^2} + \dfrac{\partial \psi}{\partial t} = u^{(s)} \dfrac{\partial \psi}{\partial x} + q^{(s)}(x)\cdot \psi, & x \in (0,1),\ t \in [0, T) \\
+\varepsilon \cdot \dfrac{\partial^2 \psi}{\partial x^2} + \dfrac{\partial \psi}{\partial t} = u^{(s)}\cdot \dfrac{\partial \psi}{\partial x} + q^{(s)}(x)\cdot\psi, & x \in (0,1),\ t \in [0, T) \\
 \psi^{(s)}(0,t) = 0, \quad \psi^{(s)}(1,t) = 0, & t \in [0, T) \\
-\psi^{(s)}(x,0) = -2\bigl(u^{(s)}(x,T) - f_\text{obs}(x)\bigr), & x \in [0,1]
+\psi^{(s)}(x,0) = -2\cdot\bigl(u^{(s)}(x,T) - f_\text{obs}(x)\bigr), & x \in {[0,1]}
 \end{cases}
 $$
 
 Градиент функционала выражается явной формулой:
+
 $$
-\nabla J\bigl[q^{(s)}\bigr](x) = \int_0^T u^{(s)}(x,t)\,\psi^{(s)}(x,t)\, dt + 2\alpha\, q^{(s)}(x)
+\nabla J\bigl(q^{(s)}\bigr)(x) = \int_0^T u^{(s)}(x,t)\cdot\psi^{(s)}(x,t) dt + 2\alpha\cdot q^{(s)}(x)
 $$
+
 На каждой итерации нужно решить лишь **две задачи** (прямую и сопряжённую) — вне зависимости от размерности $q$.
 
 #### Численная схема
@@ -79,11 +89,14 @@ $$
 
 ### Результаты
 
-![Convergence](results/convergence1_out_out.gif)
+<p align="center">
+  <img src="results/convergence1_out_out.gif" width="45%"/>
+  <img src="results/convergence2_out_out.gif" width="45%"/>
+</p>
 
 #### Сходимость восстановления $q(x)$
 
-Истинная функция $q(x) = \sin(3\pi x)$ (зелёным), численное решение (оранжевым):
+Истинная функция $q(x) = \sin(3\pi x)$ (желтым), численное решение (зеленым):
 
 - **$s = 1$** — нулевое начальное приближение
 - **$s = 500$** — хорошее совпадение
@@ -120,14 +133,6 @@ python solver.py
 
 
 # Gradient Descent for a Coefficient Inverse Problem (Burgers-type PDE)
-### Градиентный спуск для коэффициентной обратной задачи (уравнение типа Бюргерса)
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white"/>
-  <img src="https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white"/>
-  <img src="https://img.shields.io/badge/SciPy-8CAAE6?style=for-the-badge&logo=scipy&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Numba-JIT-00A3E0?style=for-the-badge"/>
-</p>
 
 ---
 
