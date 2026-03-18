@@ -1,5 +1,4 @@
-
-## 🇷🇺 Русский
+## RU Русский
 ### Коэффициентная обратная задача для нелинейного дифференциального уравнения в частных производных типа Бюргерса
 
 <p align="center">
@@ -48,11 +47,12 @@ $$u(x, T) = f_\text{obs}(x), \quad x \in [0,1]$$
 
 ### Метод решения
 
-#### Функционал Тихонова
+#### Функционал Тихонова (Loss Function)
 
-Обратная задача сводится к минимизации регуляризованного функционала:
+Обратная задача сводится к минимизации функционала с **L2-регуляризацией**. Регуляризующий член штрафует большие значения $q$ и стабилизирует решение при наличии шума в наблюдениях:
 
 $$J[q] = \int_0^1 \bigl(u(x, T; q) - f_\text{obs}(x)\bigr)^2 dx + \alpha\cdot \int_0^1 q^2(x) dx$$
+
 
 Итерационный процесс градиентного спуска:
 
@@ -138,15 +138,20 @@ python solver.py
 
 
 
-
 ## 🇬🇧 English
-### Coefficient inverse problem for a nonlinear partial differential equation of Burgers type
+### Coefficient Inverse Problem for a Nonlinear Burgers-type PDE
  
-### Overview
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white"/>
+  <img src="https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white"/>
+  <img src="https://img.shields.io/badge/SciPy-8CAAE6?style=for-the-badge&logo=scipy&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Numba-JIT-00A3E0?style=for-the-badge"/>
+</p>
  
-This project implements a **gradient descent algorithm for solving a coefficient inverse problem** governed by a nonlinear Burgers-type PDE. The goal is to recover an unknown spatial coefficient $q(x)$ from indirect observations of the solution at the final time moment — a classical ill-posed inverse problem arising in physics and engineering.
  
-The gradient of the cost functional is computed via an **adjoint (conjugate) problem**, which is the standard approach in PDE-constrained optimization and optimal control. Both the forward and adjoint problems are solved numerically using the **method of lines** combined with a **Rosenbrock scheme with complex coefficient**.
+### Description
+ 
+A **gradient descent algorithm for solving a coefficient inverse problem** for a nonlinear Burgers-type PDE is implemented. The goal is to recover an unknown spatial coefficient $q(x)$ from observations of the solution at the final time moment. This is a classical ill-posed inverse problem arising in physics and applied mathematics.
  
 > **Course project** · 2nd year · Faculty of Physics, Moscow State University  
 > Supervisor: Assoc. Prof. D.V. Lukyanenko
@@ -167,25 +172,27 @@ u(x,0) = u_{\text{init}}(x), & x \in [0,1]
 \end{cases}
 $$
  
+with boundary conditions $u(0,t) = u_\text{left}(t)$, $u(1,t) = u_\text{right}(t)$ and initial condition $u(x,0) = u_\text{init}(x)$.
+ 
 #### Inverse Problem
  
-The unknown coefficient $q(x)$ must be recovered from the observation at the final time:
+The unknown coefficient $q(x)$ must be recovered from the additional condition at the final time moment:
  
 $$u(x, T) = f_\text{obs}(x), \quad x \in [0,1]$$
  
-This is an **ill-posed problem**: the map from $q$ to observations is compact and has no stable inverse.
+The problem is **ill-posed**: the operator mapping $q$ to observations is compact and has no stable inverse.
  
 ---
  
 ### Method
  
-#### Tikhonov Functional
+#### Tikhonov Functional (Loss Function)
  
-We reformulate the inverse problem as minimization of a regularized functional:
+The inverse problem is reformulated as minimization of a functional with **L2 regularization**. The regularization term penalizes large values of $q$ and stabilizes the solution against noise in the observations:
  
-$$J[q] = \int_0^1 \bigl(u(x, T; q) - f_\text{obs}(x)\bigr)^2 dx + \alpha\cdot \int_0^1 q^2(x) dx$$
+$$J[q] = \int_0^1 \bigl(u(x, T; q) - f_\text{obs}(x)\bigr)^2 dx + \alpha\cdot \int_0^1 q^2(x)\, dx$$
  
-The iterative update is:
+Gradient descent iterative update:
  
 $$
 q^{(s+1)}(x) = q^{(s)}(x) - \beta_s \cdot \nabla J\bigl(q^{(s)}\bigr)(x)
@@ -193,7 +200,7 @@ $$
  
 #### Gradient via Adjoint Problem
  
-The gradient is derived analytically using the **adjoint state method**: by introducing an adjoint variable $\psi(x,t)$ satisfying a backward-in-time PDE:
+An adjoint variable $\psi(x,t)$ is introduced — the solution of the adjoint problem (solved backward in time):
  
 $$
 \begin{cases}
@@ -203,58 +210,51 @@ $$
 \end{cases}
 $$
  
-the gradient takes the closed-form expression:
+The gradient of the functional is given by the explicit formula:
  
 $$
-\nabla J\bigl(q^{(s)}\bigr)(x) = \int_0^T u^{(s)}(x,t)\cdot\psi^{(s)}(x,t) dt + 2\alpha\cdot q^{(s)}(x)
+\nabla J\bigl(q^{(s)}\bigr)(x) = \int_0^T u^{(s)}(x,t)\cdot\psi^{(s)}(x,t)\, dt + 2\alpha\cdot q^{(s)}(x)
 $$
  
-This approach requires solving **only two PDEs per iteration** (forward + adjoint), regardless of the dimensionality of $q$.
+At each iteration, **two problems** must be solved (forward and adjoint) — regardless of the dimensionality of $q$ — then the gradient is computed by the formula above and $q^{(s)}$ is updated.
  
 #### Numerical Scheme
  
-Both PDEs are discretized via the **method of lines**: uniform spatial grid, then a system of ODEs in time:
+Both problems are solved via the **method of lines**: a uniform grid in $x$ is introduced. Instead of finding $u(x,t)$, we seek a set of functions $u(x_n, t)$ for each fixed $x_n$:
  
 $$
-\frac{d\vec{y}}{dt} = \vec{f}(\vec{y}, t), \quad \vec{y}(0) = \vec{y}_0
+u_n \equiv u_n(t) \equiv u(x_n, t) = {?} \qquad x_n = a + h \cdot n, \qquad n = \overline{0, N}
 $$
  
-The ODE system is integrated with a **one-stage Rosenbrock scheme with complex coefficient**:
- 
+The forward and adjoint problems thus reduce to ODE systems, which are integrated with a **one-stage Rosenbrock scheme with complex coefficient**. Loops where possible are accelerated with **Numba JIT**.
  
 ---
  
 ### Results
  
+<p align="center">
+  <img src="results/convergence1_out_out.gif" width="45%"/>
+  <img src="results/convergence2_out_out.gif" width="45%"/>
+</p>
+ 
 #### Convergence of $q(x)$ Recovery
  
-The true coefficient is $q(x) = \sin(3\pi x)$ (green). The recovered solution (orange) converges progressively:
+True function $q(x) = \sin(3\pi x)$ (yellow), numerical solution (green):
  
-| Iteration | Result |
-|-----------|--------|
-| $s = 1$ | Initial guess (flat zero) |
-| $s = 100$ | Rough shape |
-| $s = 1000$ | Good match |
-| $s = 10\,000$ | Near-perfect recovery |
+- **$s = 1$** — zero initial guess
+- **$s = 500$** — good match
+- **$s = 1\,000$** — near-perfect recovery
  
-> 📷 *Convergence plots from the paper — add images to `results/` and uncomment below*  
-> <!-- ![s=1000](results/iter_1000.png) ![s=10000](results/iter_10000.png) -->
+#### Functional Decay (Loss Function)
+![Convergence](results/Figure_3.png)
  
-#### Functional Decay
- 
-The cost functional $J[q^{(s)}]$ decreases monotonically over ~8000 iterations, reaching values around $10^{-15}$ — confirming convergence to the minimum.
- 
-> 📷 *See `results/functional_decay.png`*
- 
-#### Step Size Sensitivity
- 
-The choice of descent step $\beta_s$ critically affects convergence:
+#### Step Size Sensitivity (Learning Rate $\beta_s$)
  
 | $\beta_s$ | Behavior |
 |-----------|----------|
-| Too large (e.g. 165) | Fast initial drop, then plateau oscillations |
-| Too small (e.g. 1) | Slow monotone decrease, requires far more iterations |
-| Optimal (e.g. 30) | Smooth, fast convergence |
+| Too large (165) | Fast initial drop, then plateau oscillations |
+| Too small (1) | Slow convergence, requires many more iterations |
+| Optimal (30) | Smooth, fast convergence |
  
 ---
  
@@ -271,33 +271,4 @@ python solver.py
  
 ---
  
-### Project Structure
- 
-```
-.
-├── solver.py            # Main: forward problem, adjoint problem, gradient descent
-├── schemes.py           # Rosenbrock scheme, method of lines
-├── results/             # Output figures and animations
-└── README.md
-```
- 
 ---
- 
-### Stack
- 
-| Tool | Purpose |
-|------|---------|
-| `numpy` | Array operations, spatial discretization |
-| `scipy.integrate` | ODE integration fallback |
-| `numba` | JIT acceleration of inner loops |
-| `matplotlib` | Plotting convergence and functional |
-| `celluloid` | Animated convergence GIF |
- 
----
-
-
----
-
-<p align="center">
-  <sub>Московский государственный университет · Физический факультет · Кафедра математики · 2025</sub>
-</p>
